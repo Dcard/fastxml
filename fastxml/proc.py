@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+                        
 import multiprocessing
 
 class Result(object):
@@ -11,7 +14,7 @@ class Result(object):
 class ForkResult(Result):
     def __init__(self, queue, p):
         self.queue = queue
-        self.p = p 
+        self.p = p
 
     def ready(self):
         return self.p.is_alive()

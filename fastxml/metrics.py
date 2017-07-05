@@ -1,3 +1,7 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from builtins import range
 import math
 
 def precision(scores, k):
@@ -12,7 +16,7 @@ def dcg(scores, k=None):
 def ndcg(scores, k=None, eps=1e-6):
     idcgs = dcg(sorted(scores, reverse=True), k)
     if idcgs < eps:
-        return 0.0
+        return 0
 
     dcgs = dcg(scores, k)
 
@@ -27,7 +31,7 @@ def pSdcg(scores, props, k=None):
 def pSndcg(scores, props, k=None):
     dcgs = pSdcg(scores, props, k)
 
-    denom = sum(1. / math.log(i + 2) for i in xrange(k or len(scores)))
+    denom = sum(1 / math.log(i + 2) for i in range(k or len(scores)))
 
     return dcgs / denom
 

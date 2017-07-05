@@ -1,7 +1,11 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from builtins import range, map, zip
 import multiprocessing
 import time
 from math import ceil
-from itertools import islice, repeat, izip, chain
+from itertools import islice, repeat, chain
 from contextlib import closing
 from collections import Counter, OrderedDict, defaultdict, deque
 
@@ -64,7 +68,7 @@ class Tree(object):
 class FastXML(object):
 
     def __init__(self, n_trees=1, max_leaf_size=10, max_labels_per_leaf=20,
-            re_split=0, n_jobs=1, alpha=1e-4, n_epochs=2, n_updates=100, bias=True, 
+            re_split=0, n_jobs=1, alpha=1e-4, n_epochs=2, n_updates=100, bias=True,
             subsample=1, loss='log', sparse_multiple=25, leaf_classifiers=False,
             gamma=30, blend=0.8, leaf_eps=1e-5, optimization="fastxml", engine='auto',
             auto_weight=2**5, C=1, eps=None, leaf_probs=False, verbose=False, seed=2016):
@@ -82,7 +86,7 @@ class FastXML(object):
         self.seed = seed
         assert isinstance(n_epochs, int) or n_epochs == 'auto'
         self.n_epochs = n_epochs
-        self.n_updates = float(n_updates)
+        self.n_updates = n_updates
         self.verbose = verbose
         self.bias = bias
         self.subsample = subsample
@@ -109,13 +113,13 @@ class FastXML(object):
 
     def split_node(self, idxs, splitter, rs):
         if self.verbose and len(idxs) > 1000:
-            print "Splitting {}".format(len(idxs))
+            print("Splitting {}".format(len(idxs)))
 
         return splitter.split_node(idxs, rs)
 
     def compute_probs(self, y, idxs, ml):
         counter = Counter(yi for i in idxs for yi in y[i])
-        total = float(len(idxs))
+        total = len(idxs)
         i, j, v = [], [], []
         for l, val in counter.most_common(self.max_labels_per_leaf):
             i.append(0)
@@ -184,22 +188,22 @@ class FastXML(object):
         else:
             penalty = 'l2'
 
-        
+
         X_train, y_train = self.build_XY(X, idxss, rs)
 
         in_liblinear = X_train.shape[0] > (self.auto_weight * self.max_leaf_size)
         if self.engine == 'liblinear' or (self.engine == 'auto' and in_liblinear):
             if self.loss == 'log':
                 # No control over penalty
-                clf = LogisticRegression(solver='liblinear', random_state=rs, tol=1, 
+                clf = LogisticRegression(solver='liblinear', random_state=rs, tol=1,
                         C=self.C, penalty=penalty)
             else:
-                clf = LinearSVC(C=self.C, fit_intercept=self.bias, 
-                        max_iter=n_epochs, class_weight='balanced', 
+                clf = LinearSVC(C=self.C, fit_intercept=self.bias,
+                        max_iter=n_epochs, class_weight='balanced',
                         penalty=penalty, random_state=rs)
 
         else:
-            clf = SGDClassifier(loss=self.loss, penalty=penalty, n_iter=n_epochs, 
+            clf = SGDClassifier(loss=self.loss, penalty=penalty, n_iter=n_epochs,
                     alpha=self.alpha, fit_intercept=self.bias, class_weight='balanced',
                     random_state=rs)
 
@@ -221,7 +225,7 @@ class FastXML(object):
 
     def resplit_data(self, X, idxs, clf, classes):
         X_train = self.build_X(X, idxs)
-        new_idxs = [[] for _ in xrange(classes)]
+        new_idxs = [[] for _ in range(classes)]
         for i, k in enumerate(clf.predict(X_train)):
             new_idxs[k].append(idxs[i])
 
@@ -234,7 +238,7 @@ class FastXML(object):
         if l_idx and r_idx:
             # Train the classifier
             if self.verbose and len(idxs) > 1000:
-                print "Training classifier"
+                print("Training classifier")
 
             clf, clf_fast = self.train_clf(X, [l_idx, r_idx], rs)
 
@@ -261,7 +265,7 @@ class FastXML(object):
             return Leaf(self.compute_probs(y, idxs, splitter.max_label))
 
         # Resplit the data
-        for tries in xrange(self.re_split):
+        for tries in range(self.re_split):
 
             if clf is not None:
                 l_idx, r_idx = self.resplit_data(X, idxs, clf, 2)
@@ -269,7 +273,7 @@ class FastXML(object):
             if l_idx and r_idx: break
 
             if self.verbose and len(idxs) > 1000:
-                print "Re-splitting {}".format(len(idxs))
+                print("Re-splitting {}".format(len(idxs)))
 
             l_idx, r_idx, (clf, clff) = self.split_train(
                     X, idxs, splitter, rs)
@@ -303,13 +307,13 @@ class FastXML(object):
         lyp = compute_leafs(self.gamma, Xn.data, Xn.indices, indices, self.uxs_, self.xr_)
 
         # Blend leaf and tree probabilities
-        if self.blend == 0.0:
+        if self.blend == 0:
             def f():
                 return (1 - self.blend) * np.array(lyp)
 
         elif self.leaf_probs:
             def f():
-                nps = (self.blend * ypi.data + (1 - self.blend) * np.array(lyp)) / 2.
+                nps = (self.blend * ypi.data + (1 - self.blend) * np.array(lyp)) / 2
                 return nps
 
         else:
@@ -323,7 +327,7 @@ class FastXML(object):
         assert fmt in ('sparse', 'dict')
         s = []
         num = X.shape[0] if isinstance(X, sp.csr_matrix) else len(X)
-        for i in xrange(num):
+        for i in range(num):
             mean = self._predict_opt(X[i], roots)
             if self.leaf_classifiers and self.blend < 1:
                 mean = self._add_leaf_probs(X[i], mean)
@@ -335,14 +339,14 @@ class FastXML(object):
                 od = OrderedDict()
                 for idx in reversed(mean.data.argsort()):
                     od[mean.indices[idx]] = mean.data[idx]
-                
+
                 s.append(od)
 
         if fmt == 'sparse':
             return sp.vstack(s)
 
         return s
-        
+
     def generate_idxs(self, dataset_len):
         if self.subsample == 1:
             return repeat(range(dataset_len))
@@ -380,7 +384,7 @@ class FastXML(object):
 
         procs = []
         finished = []
-        counter = iter(xrange(self.n_trees))
+        counter = iter(range(self.n_trees))
         idxs = self.generate_idxs(len(X))
         while len(finished) < self.n_trees:
             if len(procs) < self.n_jobs and (len(procs) + len(finished)) < self.n_trees :
@@ -402,7 +406,7 @@ class FastXML(object):
                 procs = _procs
 
         return finished
-    
+
     def compact(self, root, dims):
         #CLS
         Ws = []
@@ -438,39 +442,39 @@ class FastXML(object):
         else:
             W_stack = sp.csr_matrix(([], ([], [])), shape=(0, dims)).astype('float32')
 
-        b = np.array(bs, dtype='float32') 
-        t = np.array(tree, dtype='uint32') 
-        return Tree(rootIdx, W_stack, 
+        b = np.array(bs, dtype='float32')
+        t = np.array(tree, dtype='uint32')
+        return Tree(rootIdx, W_stack,
                 b,
                 t,
                 probs)
 
     def fit(self, X, y, weights=None):
-        
+
         self.roots = self._build_roots(X, y, weights)
         if self.leaf_classifiers:
             self.norms_, self.uxs_, self.xr_ = self._compute_leaf_probs(X, y)
-    
+
     def _compute_leaf_probs(self, X, y):
         dd = defaultdict(list)
         norms = compute_unit_norms(X)
         ml = 0
-        for Xi, yis in izip(X, y):
+        for Xi, yis in zip(X, y):
             Xin = norm(norms, Xi)
             for yi in yis:
                 dd[yi].append(Xin)
                 ml = max(yi, ml)
 
         if self.verbose:
-            print "Computing means and radius for hard margin"
+            print("Computing means and radius for hard margin")
 
         xmeans = []
         xrs = []
         with closing(multiprocessing.Pool(processes=self.n_jobs)) as p:
-            it = ((i, dd[i], self.leaf_eps) for i in xrange(ml + 1))
-            for k, ux, r in p.imap(compute_leaf_metrics, it, 100):
+            it = ((i, dd[i], self.leaf_eps) for i in range(ml + 1))
+            for k, ux, r in p.map(compute_leaf_metrics, it, 100):
                 if self.verbose and k % 100 == 0:
-                    print "Training leaf classifier: %s of %s" % (k, ml)
+                    print("Training leaf classifier: %s of %s" % (k, ml))
 
                 if ux is None:
                     ux = sp.csr_matrix((1, X[0].shape[1])).astype('float64')
@@ -499,7 +503,7 @@ def compute_leaf_metrics(data):
         ux = sum(Xs) / len(Xs)
 
     else:
-        return i, None, 0.0
+        return i, None, 0
 
     rad = max(radius(ux.data, ux.indices, Xi.data, Xi.indices) for Xi in Xs)
     return i, ux, rad
@@ -511,13 +515,13 @@ def compute_unit_norms(X):
             norms[ind] = Xi.data[i] ** 2
 
     norms = norms ** .5
-    norms[np.where(norms == 0)] = 1.0
+    norms[np.where(norms == 0)] = 1
     return norms.astype('float32')
 
 class MetricNode(object):
     __slots__ = ('left', 'right')
     is_leaf = False
-    
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -560,9 +564,9 @@ class MetricLeaf(object):
     def _build_probs(self, w, n=0):
         ys = Counter(y for idx in self.idxs for y in w[idx])
         total = len(self.idxs)
-        return n, [(n, {k: v / float(total) for k, v in ys.iteritems()})]
+        return n, [(n, {k: v / total for k, v in ys.iteritems()})]
 
-def metric_cluster(y, weights=None, max_leaf_size=10, 
+def metric_cluster(y, weights=None, max_leaf_size=10,
         sparse_multiple=25, seed=2016, verbose=False):
 
     rs = np.random.RandomState(seed=seed)
@@ -575,7 +579,7 @@ def metric_cluster(y, weights=None, max_leaf_size=10,
 
     def _metric_cluster(idxs):
         if verbose and len(idxs) > 1000:
-            print "Splitting:", len(idxs)
+            print("Splitting:", len(idxs))
 
         if len(idxs) < max_leaf_size:
             return MetricLeaf(idxs)

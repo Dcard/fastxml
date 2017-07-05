@@ -349,7 +349,7 @@ class FastXML(object):
 
     def generate_idxs(self, dataset_len):
         if self.subsample == 1:
-            return repeat(range(dataset_len))
+            return repeat(list(range(dataset_len)))
 
         batch_size = int(dataset_len * self.subsample) \
                 if self.subsample < 1 else self.subsample
@@ -359,7 +359,7 @@ class FastXML(object):
 
         def gen(bs):
             rs = np.random.RandomState(seed=self.seed + 1000)
-            idxs = range(dataset_len)
+            idxs = list(range(dataset_len))
             while True:
                 rs.shuffle(idxs)
                 yield idxs[:bs]
@@ -590,4 +590,4 @@ def metric_cluster(y, weights=None, max_leaf_size=10,
 
         return MetricNode(_metric_cluster(left), _metric_cluster(right))
 
-    return _metric_cluster(range(len(y)))
+    return _metric_cluster(list(range(len(y))))
